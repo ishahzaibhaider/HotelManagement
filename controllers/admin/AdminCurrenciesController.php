@@ -333,9 +333,8 @@ class AdminCurrenciesControllerCore extends AdminController
      */
     public function processExchangeRates()
     {
-        if (!$this->errors = Currency::refreshCurrencies()) {
-            Tools::redirectAdmin(self::$currentIndex.'&conf=6&token='.$this->token);
-        }
+        // External currency rate updates disabled for data sovereignty
+        $this->errors[] = $this->l('Automatic currency updates are disabled. Please set exchange rates manually.');
     }
 
     /**

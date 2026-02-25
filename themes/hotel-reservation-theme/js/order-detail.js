@@ -134,46 +134,36 @@ function initRefundDeniedTooltip() {
 }
 
 function initMap() {
+    if (typeof L === 'undefined') return;
+
     $('.booking-hotel-map-container').each(function (i, element) {
-        const hotelLocation = {
-            lat: Number($(this).attr('latitude')),
-            lng: Number($(this).attr('longitude')),
-        };
-        const map = new google.maps.Map(element, {
-            zoom: 10,
-            center: hotelLocation,
-            disableDefaultUI: true,
-            fullscreenControl: true,
-            mapId: PS_MAP_ID
+        var lat = Number($(this).attr('latitude'));
+        var lng = Number($(this).attr('longitude'));
+        element.style.minHeight = '300px';
+
+        var map = L.map(element, {
+            zoomControl: false,
+            fullscreenControl: true
+        }).setView([lat, lng], 10);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 19
+        }).addTo(map);
+
+        var customIcon = L.icon({
+            iconUrl: PS_STORES_ICON,
+            iconSize: [24, 24],
+            iconAnchor: [12, 24],
+            popupAnchor: [0, -24]
         });
 
-        let icon = document.createElement('img');
-        icon.src = PS_STORES_ICON;
-        icon.style.width = '24px';
-        icon.style.height = '24px';
+        var markerQuery = (typeof location !== 'undefined' && location.query) ? location.query : null;
 
-        const marker = new google.maps.marker.AdvancedMarkerElement({
-            position: hotelLocation,
-            map: map,
-            title: location.hotel_name,
-            content: icon,
-        });
-
-        marker.query = location.query || null;
-        marker.latitude = hotelLocation.lat;
-        marker.longitude = hotelLocation.lng;
-
-        marker.addListener('click', function() {
-            let query = '';
-            if (this.query) {
-                query = this.query;
-            } else if (this.latitude && this.longitude) {
-                query = `${this.latitude},${this.longitude}`;
-            }
-
-            if (query) {
-                window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank');
-            }
+        var marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+        marker.on('click', function () {
+            var query = markerQuery || (lat + ',' + lng);
+            window.open('https://www.openstreetmap.org/search?query=' + encodeURIComponent(query), '_blank');
         });
     });
 }

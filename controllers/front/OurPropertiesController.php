@@ -111,7 +111,7 @@ class OurPropertiesControllerCore extends FrontController
                 $hotelsInfo = array_slice($hotelsInfo, $page * 10, 10);
             }
 
-            if ($displayHotelMap && Configuration::get('PS_API_KEY') && Configuration::get('WK_GOOGLE_ACTIVE_MAP') && Configuration::get('PS_MAP_ID')) {
+            if ($displayHotelMap && Configuration::get('WK_GOOGLE_ACTIVE_MAP')) {
                 if ($hotelLocations = $objHotelInfo->getMapFormatHotelsInfo(Configuration::get('WK_MAP_HOTEL_ACTIVE_ONLY'))) {
                     $hotelLocationArray = str_replace(array('\n', '\r'), '', json_encode($hotelLocations));
                 }
@@ -143,19 +143,16 @@ class OurPropertiesControllerCore extends FrontController
         parent::setMedia();
         $this->addJS(_THEME_JS_DIR_.'our-properties.js');
         $this->addCSS(_THEME_CSS_DIR_.'our-properties.css');
-        // GOOGLE MAP
-        if (($PS_API_KEY = Configuration::get('PS_API_KEY')) && ($PS_MAP_ID = Configuration::get('PS_MAP_ID')) && Configuration::get('WK_GOOGLE_ACTIVE_MAP')) {
+        // OpenStreetMap via Leaflet
+        if (Configuration::get('WK_GOOGLE_ACTIVE_MAP')) {
             Media::addJsDef(
                 array(
                     'PS_STORES_ICON' => $this->context->link->getMediaLink(_PS_IMG_.Configuration::get('PS_STORES_ICON')),
-                    'PS_MAP_ID' => $PS_MAP_ID
                 )
             );
 
-            $this->addJS(
-                'https://maps.googleapis.com/maps/api/js?key='.$PS_API_KEY.
-                '&libraries=places,marker&loading=async&callback=initMap&language='.$this->context->language->iso_code.'&region='.$this->context->country->iso_code
-            );
+            $this->addCSS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+            $this->addJS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
         }
     }
 }

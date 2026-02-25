@@ -637,23 +637,17 @@ class GuestTrackingControllerCore extends FrontController
                         if ($idHotel = HotelBookingDetail::getIdHotelByIdOrder($objOrder->id)) {
                             $objHotelBranchInformation = new HotelBranchInformation($idHotel, $this->context->language->id);
                             if (Validate::isLoadedObject($objHotelBranchInformation)) {
-                                if (($apiKey = Configuration::get('PS_API_KEY'))
-                                    && Configuration::get('WK_GOOGLE_ACTIVE_MAP')
-                                    && ($PS_MAP_ID = Configuration::get('PS_MAP_ID'))
-                                ) {
+                                if (Configuration::get('WK_GOOGLE_ACTIVE_MAP')) {
                                     if (floatval($objHotelBranchInformation->latitude) != 0
                                         && floatval($objHotelBranchInformation->longitude) != 0
                                     ) {
                                         Media::addJsDef(array(
                                             'PS_STORES_ICON' => $this->context->link->getMediaLink(_PS_IMG_.Configuration::get('PS_STORES_ICON')),
                                             'initiateMap' => 1,
-                                            'PS_MAP_ID' => $PS_MAP_ID,
                                         ));
 
-                                        $this->addJS(
-                                            'https://maps.googleapis.com/maps/api/js?key='.$apiKey.'&libraries=places,marker&loading=async&callback=initMap&language='.
-                                            $this->context->language->iso_code.'&region='.$this->context->country->iso_code
-                                        );
+                                        $this->addCSS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+                                        $this->addJS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
 
                                         // just need to load the map once for the first order with map details. So break the loop.
                                         break;

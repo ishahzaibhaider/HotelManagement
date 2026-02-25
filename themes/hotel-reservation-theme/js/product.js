@@ -1310,30 +1310,37 @@ function updateRoomServiceQuantity(that) {
 
 
 function initMap() {
-    const map = new google.maps.Map($('#room_type_map_tab .map-wrap').get(0), {
-        zoom: 10,
-        streetViewControl: false,
-        mapId: PS_MAP_ID
+    if (typeof L === 'undefined') return;
+    var mapEl = $('#room_type_map_tab .map-wrap').get(0);
+    if (!mapEl) return;
+    mapEl.style.minHeight = '300px';
+
+    var lat = Number(hotel_location.latitude);
+    var lng = Number(hotel_location.longitude);
+
+    var map = L.map(mapEl, { zoomControl: true }).setView([lat, lng], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+    }).addTo(map);
+
+    var customIcon = L.icon({
+        iconUrl: PS_STORES_ICON,
+        iconSize: [24, 24],
+        iconAnchor: [12, 24],
+        popupAnchor: [0, -24]
     });
 
-    const hotelLatLng = {
-        lat: Number(hotel_location.latitude),
-        lng: Number(hotel_location.longitude),
-    };
+    L.marker([lat, lng], { icon: customIcon }).addTo(map);
 
-    map.setCenter(hotelLatLng);
-    let icon = document.createElement('img');
-    icon.src = PS_STORES_ICON;
-    icon.style.width = '24px';
-    icon.style.height = '24px';
-    let marker = new google.maps.marker.AdvancedMarkerElement({
-        position: hotelLatLng,
-        map: map,
-        content: icon,
-    });
-
-    const uiContent = $('#room-info-map-ui-content .hotel-info-wrap').get(0);
-    map.controls[google.maps.ControlPosition.LEFT_TOP].push(uiContent);
+    var uiContent = $('#room-info-map-ui-content .hotel-info-wrap').get(0);
+    if (uiContent) {
+        var CustomControl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: function() { return uiContent; }
+        });
+        map.addControl(new CustomControl());
+    }
 }
 
 var BookingForm = {

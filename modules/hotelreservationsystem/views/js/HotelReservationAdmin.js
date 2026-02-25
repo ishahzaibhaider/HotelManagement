@@ -20,16 +20,15 @@
 * @license https://opensource.org/license/osl-3-0-php Open Software License version 3.0
 */
 
-var GoogleMapsManager = {
+var LeafletMapManager = {
     defaultLatLng: null,
     defaultZoom: 10,
     map: null,
     markers: [],
-    placeService: null,
+    searchTimeout: null,
 
     init: function(jQDiv) {
         this.mapDiv = jQDiv;
-        this.geocoder = new google.maps.Geocoder();
     },
     setDefaultLatLng: function(cb) {
         if (!this.defaultLatLng) {
@@ -38,210 +37,189 @@ var GoogleMapsManager = {
             var formattedAddress = $("#locformatedAddr").val();
             var that = this;
             if (latitude && longitude) {
-                that.defaultLatLng = {lat: latitude, lng: longitude};
+                that.defaultLatLng = [latitude, longitude];
                 that.defaultZoom = 10;
                 that.formattedAddress = formattedAddress;
                 if(cb && typeof cb === 'function') {
                     cb();
                 }
             } else {
-                that.geocoder.geocode({
-                    address: defaultCountry
-                }, function(results, status) {
-                    if (status === google.maps.GeocoderStatus.OK) {
-                        that.defaultLatLng = {
-                            lat: results[0].geometry.location.lat(),
-                            lng: results[0].geometry.location.lng(),
-                        };
-                        that.defaultZoom = 4;
-                        if(cb && typeof cb === 'function') {
-                            cb();
+                fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(defaultCountry))
+                    .then(function(r) { return r.json(); })
+                    .then(function(results) {
+                        if (results && results.length > 0) {
+                            that.defaultLatLng = [parseFloat(results[0].lat), parseFloat(results[0].lon)];
+                            that.defaultZoom = 4;
+                        } else {
+                            that.defaultLatLng = [20, 0];
+                            that.defaultZoom = 2;
                         }
-                    }
-                });
+                        if(cb && typeof cb === 'function') { cb(); }
+                    })
+                    .catch(function() {
+                        that.defaultLatLng = [20, 0];
+                        that.defaultZoom = 2;
+                        if(cb && typeof cb === 'function') { cb(); }
+                    });
             }
-        }
-    },
-    fetchFields: async function(request) {
-        if (!request.placeId) return;
-        const place = new google.maps.places.Place({
-            id: request.placeId
-        });
-
-        const fieldsRequest = {
-            fields: ["displayName", "formattedAddress", "location"]
-        };
-
-        try {
-            await place.fetchFields(fieldsRequest);
-            this.placeService = place;
-            return place;
-        } catch (error) {
-            console.log(error);
         }
     },
     initMap: function(cb) {
         if (!this.map) {
             var that = this;
             that.setDefaultLatLng(function() {
-                that.map = new google.maps.Map($(that.mapDiv).get(0), {
+                that.map = L.map($(that.mapDiv).get(0), {
                     zoom: that.defaultZoom,
-                    clickableIcons: true,
-                    mapId: PS_MAP_ID
+                    center: that.defaultLatLng,
                 });
-                that.map.setCenter(that.defaultLatLng);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                    maxZoom: 19,
+                }).addTo(that.map);
+
                 if (that.defaultLatLng && that.formattedAddress) {
                     that.addMarker(that.defaultLatLng, null, that.formattedAddress);
                 }
-                // register marker events
-                that.map.addListener('click', function (e) {
-                    var latLng = e.latLng;
-                    // if it is a Place Of Interest (POI), event contains the property 'placeId'
-                    if (Object.hasOwn(e, 'placeId')) {
-                        that.fetchFields({ placeId: e.placeId }).then(place => {
-                            if (place && place.location) {
-                               that.addMarker(place.location, null, place.formattedAddress);
+
+                that.map.on('click', function (e) {
+                    var latLng = [e.latlng.lat, e.latlng.lng];
+                    fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + latLng[0] + '&lon=' + latLng[1])
+                        .then(function(r) { return r.json(); })
+                        .then(function(result) {
+                            if (result && result.display_name) {
+                                that.addMarker(latLng, null, result.display_name);
+                            } else {
+                                that.addMarker(latLng, null, latLng[0].toFixed(6) + ', ' + latLng[1].toFixed(6));
                             }
+                        })
+                        .catch(function() {
+                            that.addMarker(latLng, null, latLng[0].toFixed(6) + ', ' + latLng[1].toFixed(6));
                         });
-                    } else {
-                        that.geocoder.geocode({ location: latLng }, function(results, status) {
-                            if (status === 'OK' && results[0]) {
-                                that.addMarker(latLng, null, results[0].formatted_address);
-                            }
-                        });
-                    }
                 });
-                if(cb && typeof cb === 'function') {
-                    cb();
-                }
+
+                if(cb && typeof cb === 'function') { cb(); }
             });
         } else {
-            if(cb && typeof cb === 'function') {
-                cb();
-            }
+            if(cb && typeof cb === 'function') { cb(); }
         }
     },
     initAutocomplete: function(jQInput, cb) {
         var that = this;
         that.initMap(function() {
-            that.autocompleteInput = jQInput;
-            var input = $(that.autocompleteInput).get(0);
-            that.autocomplete = new google.maps.places.PlaceAutocompleteElement({
-                locationRestriction: that.map.getBounds()
+            var searchContainer = document.createElement('div');
+            searchContainer.style.cssText = 'position:relative;margin:10px;z-index:1000;';
+            var searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.id = 'leaflet-search-input';
+            searchInput.placeholder = 'Search location...';
+            searchInput.style.cssText = 'width:250px;padding:8px 12px;border:1px solid #ccc;border-radius:4px;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);';
+            searchContainer.appendChild(searchInput);
+
+            var resultsDiv = document.createElement('div');
+            resultsDiv.id = 'leaflet-search-results';
+            resultsDiv.style.cssText = 'position:absolute;top:100%;left:0;width:250px;background:#fff;border:1px solid #ccc;border-top:none;max-height:200px;overflow-y:auto;display:none;z-index:1001;';
+            searchContainer.appendChild(resultsDiv);
+
+            $(that.mapDiv).parent().prepend(searchContainer);
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(that.searchTimeout);
+                var query = this.value;
+                if (query.length < 3) { resultsDiv.style.display = 'none'; return; }
+                that.searchTimeout = setTimeout(function() {
+                    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5')
+                        .then(function(r) { return r.json(); })
+                        .then(function(results) {
+                            resultsDiv.innerHTML = '';
+                            if (results && results.length) {
+                                results.forEach(function(result) {
+                                    var item = document.createElement('div');
+                                    item.style.cssText = 'padding:8px;cursor:pointer;border-bottom:1px solid #eee;font-size:13px;';
+                                    item.textContent = result.display_name;
+                                    item.addEventListener('mouseenter', function() { this.style.background = '#f0f0f0'; });
+                                    item.addEventListener('mouseleave', function() { this.style.background = '#fff'; });
+                                    item.addEventListener('click', function() {
+                                        var latLng = [parseFloat(result.lat), parseFloat(result.lon)];
+                                        that.map.setView(latLng, 16);
+                                        that.addMarker(latLng, null, result.display_name);
+                                        searchInput.value = result.display_name;
+                                        resultsDiv.style.display = 'none';
+                                    });
+                                    resultsDiv.appendChild(item);
+                                });
+                                resultsDiv.style.display = 'block';
+                            } else {
+                                resultsDiv.style.display = 'none';
+                            }
+                        });
+                }, 300);
             });
 
-            that.autocomplete.id = "place-autocomplete-input";
-            input.appendChild(that.autocomplete);
-
-            that.map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
-            that.infoWindow = new google.maps.InfoWindow({});
-            that.autocomplete.addEventListener("gmp-select", async (event) => {
-                const place = event.placePrediction.toPlace();
-
-                await place.fetchFields({
-                    fields: ["displayName", "formattedAddress", "location", "viewport"]
-                });
-                // Fit the map to the place
-                if (place.viewport) {
-                    that.map.fitBounds(place.viewport);
-                } else {
-                    that.map.setCenter(place.location);
-                    that.map.setZoom(18);
-                }
-
-                that.addMarker(place.location, null, place.formattedAddress);
-            });
-            google.maps.event.addDomListener(input, 'keydown', function (e) {
-                if (e.keyCode === 13) {
-                    e.preventDefault();
-                }
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.keyCode === 13) { e.preventDefault(); }
             });
 
-            if(cb && typeof cb === 'function') {
-                cb();
-            }
+            document.addEventListener('click', function(e) {
+                if (!searchContainer.contains(e.target)) { resultsDiv.style.display = 'none'; }
+            });
+
+            if(cb && typeof cb === 'function') { cb(); }
         });
     },
-    addMarker: function(latLng, address = null, fa = null, addInfoWindow = true, cb = null) {
+    addMarker: function(latLng, address, fa, addInfoWindow, cb) {
+        addInfoWindow = (typeof addInfoWindow === 'undefined') ? true : addInfoWindow;
+        cb = cb || null;
         var that = this;
         that.clearAllMarkers();
 
-        let icon = document.createElement('img');
-        icon.src = PS_STORES_ICON;
-        icon.style.width = '24px';
-        icon.style.height = '24px';
-
-        var marker = new google.maps.marker.AdvancedMarkerElement({
-            position: latLng,
-            map: that.map,
-            content: icon,
-            draggable: true,
-        });
-        that.markers.push(marker);
-        marker.addListener('dragend', function(e) {
-            var latLng = {
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng(),
-            }
-            that.geocoder.geocode({ location: latLng }, function (results, status) {
-                if (status == google.maps.GeocoderStatus.OK && results[0]) {
-                    that.addMarker(latLng, results[0]);
-                }
-            });
-        });
-
-        if (addInfoWindow) {
-            if (address === null && fa) {
-                // open info window
-                that.addInfoWindow(marker, fa);
-            } else {
-                var content = '<div><h6>' + this.placeService.displayName + '</h6><p>' + address.formatted_address + '</p></div>';
-                that.addInfoWindow(marker, content);
-                if(cb && typeof cb === 'function') {
-                    cb();
-                }
-            }
-        } else {
-            if(cb && typeof cb === 'function') {
-                cb();
-            }
-
-            return marker;
+        var iconOptions = {};
+        if (typeof PS_STORES_ICON !== 'undefined' && PS_STORES_ICON) {
+            iconOptions = {
+                icon: L.icon({
+                    iconUrl: PS_STORES_ICON,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 24],
+                    popupAnchor: [0, -24],
+                })
+            };
         }
 
+        var marker = L.marker(latLng, $.extend({draggable: true}, iconOptions)).addTo(that.map);
+        that.markers.push(marker);
+
+        marker.on('dragend', function(e) {
+            var newLatLng = [e.target.getLatLng().lat, e.target.getLatLng().lng];
+            fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + newLatLng[0] + '&lon=' + newLatLng[1])
+                .then(function(r) { return r.json(); })
+                .then(function(result) {
+                    if (result && result.display_name) {
+                        that.addMarker(newLatLng, null, result.display_name);
+                    }
+                });
+        });
+
+        var content = fa || (address ? address.display_name || '' : '');
+        if (addInfoWindow && content) {
+            marker.bindPopup(content, {maxWidth: 200}).openPopup();
+        }
+
+        that.setFormVars({
+            lat: latLng[0],
+            lng: latLng[1],
+            formattedAddress: content,
+            inputText: $('#leaflet-search-input').length ? $('#leaflet-search-input').val() : '',
+        });
+
+        if(cb && typeof cb === 'function') { cb(); }
+        return marker;
     },
     clearAllMarkers: function() {
+        var that = this;
         for (var i = 0; i < this.markers.length; i++) {
-            this.markers[i].setMap(null);
+            that.map.removeLayer(this.markers[i]);
         }
         this.markers = [];
-    },
-    addInfoWindow: function(marker, content) {
-        if (typeof google === 'object') {
-            var that = this;
-
-            var infoWindow = new google.maps.InfoWindow({
-                content: content,
-                maxWidth: 200,
-            });
-
-            infoWindow.open({
-                anchor: marker,
-                map: that.map
-            });
-
-            google.maps.event.addListener(infoWindow, 'closeclick', function () {
-                that.clearAllMarkers();
-            });
-
-            var latLng = marker.position;
-            that.setFormVars({
-                lat: latLng.lat,
-                lng: latLng.lng,
-                formattedAddress: content,
-                inputText: $('#pac-input').val(),
-            });
-        }
     },
     setFormVars: function(params) {
         $('#loclatitude').val(params.lat);
@@ -251,19 +229,17 @@ var GoogleMapsManager = {
     },
 }
 
-$(document).on('click', 'button.gm-ui-hover-effect', function () {
-    GoogleMapsManager.clearAllMarkers();
-});
+// Backward compatibility alias
+var GoogleMapsManager = LeafletMapManager;
 
 function initGoogleMaps() {
     if (typeof enabledDisplayMap != 'undefined'
         && $('#googleMapContainer').length
-        && typeof google == 'object'
-        && typeof google.maps == 'object'
+        && typeof L == 'object'
     ) {
-        GoogleMapsManager.init($('#map'));
-        GoogleMapsManager.initMap();
-        GoogleMapsManager.initAutocomplete($('#pac-input'));
+        LeafletMapManager.init($('#map'));
+        LeafletMapManager.initMap();
+        LeafletMapManager.initAutocomplete($('#pac-input'));
     }
 }
 
@@ -923,6 +899,8 @@ function toggleGoogleMapsFields()
         $('#conf_id_WK_DISPLAY_PROPERTIES_PAGE_GOOGLE_MAP').parent().hide();
     }
 }
+// Alias
+var toggleMapFields = toggleGoogleMapsFields;
 
 
 function showFeaturePriceRuleLangField(lang_iso_code, id_lang)

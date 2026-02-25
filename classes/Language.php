@@ -804,7 +804,8 @@ class LanguageCore extends ObjectModel
         $lang->active = true;
         // If the language pack has not been provided, retrieve it from prestashop.com
         if (!$lang_pack) {
-            $lang_pack = json_decode(Tools::file_get_contents(_QLO_API_URL_.'/lang_pack/get_lang_pack.php?version='._PS_VERSION_.'&iso_lang='.$iso_code));
+            // External language pack download disabled for data sovereignty
+            $lang_pack = null;
         }
 
         // If a language pack has been found or provided, prefill the language object with the value
@@ -837,7 +838,8 @@ class LanguageCore extends ObjectModel
             Configuration::updateGlobalValue('PS_ALLOW_ACCENTED_CHARS_URL', 1);
         }
 
-        $flag = Tools::file_get_contents(_QLO_API_URL_.'/download/lang_pack/flags/'.$iso_code.'.jpg');
+        // External flag download disabled for data sovereignty
+        $flag = null;
         if ($flag != null && !preg_match('/<body>/', $flag)) {
             $file = fopen(_PS_ROOT_DIR_.'/img/l/'.(int)$lang->id.'.jpg', 'w');
             if ($file) {
@@ -918,7 +920,9 @@ class LanguageCore extends ObjectModel
         $errors = array();
         $file = _PS_TRANSLATIONS_DIR_.(string)$iso.'.gzip';
 
-        if (!$lang_pack_link = Tools::file_get_contents(_QLO_API_URL_.'/lang_pack/get_lang_pack.php?version='.$version.'&iso_lang='.Tools::strtolower((string)$iso))) {
+        // External language pack download disabled for data sovereignty
+        $lang_pack_link = false;
+        if (!$lang_pack_link) {
             $errors[] = Tools::displayError('Archive cannot be downloaded from prestashop.com.');
         } elseif (!$lang_pack = json_decode($lang_pack_link)) {
             $errors[] = Tools::displayError('Error occurred when language was checked according to your Prestashop version.');

@@ -412,6 +412,9 @@ class CurrencyCore extends ObjectModel
 
     public static function refreshCurrencies()
     {
+        // External currency feed disabled for data sovereignty — set rates manually in admin
+        return null;
+
         // Parse
         if (!$feed = Tools::simplexml_load_file(_PS_CURRENCY_FEED_URL_)) {
             return Tools::displayError('Cannot parse feed.');

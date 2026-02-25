@@ -236,18 +236,15 @@ class ContactControllerCore extends FrontController
         $this->addJS(_THEME_JS_DIR_.'contact-form.js');
         $this->addJS(_PS_JS_DIR_.'validate.js');
 
-        // GOOGLE MAP
-        if (($PS_API_KEY = Configuration::get('PS_API_KEY')) && ($PS_MAP_ID = Configuration::get('PS_MAP_ID')) && Configuration::get('WK_GOOGLE_ACTIVE_MAP')) {
+        // OpenStreetMap via Leaflet
+        if (Configuration::get('WK_GOOGLE_ACTIVE_MAP')) {
             Media::addJsDef(
                 array(
                     'PS_STORES_ICON' => $this->context->link->getMediaLink(_PS_IMG_.Configuration::get('PS_STORES_ICON')),
-                    'PS_MAP_ID' => $PS_MAP_ID,
                 )
             );
-            $this->addJS(
-                'https://maps.googleapis.com/maps/api/js?key='.$PS_API_KEY.
-                '&libraries=places,marker&loading=async&callback=initMap&language='.$this->context->language->iso_code.'&region='.$this->context->country->iso_code
-            );
+            $this->addCSS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+            $this->addJS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
         }
     }
 

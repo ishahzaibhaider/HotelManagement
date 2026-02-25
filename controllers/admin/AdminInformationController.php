@@ -178,13 +178,8 @@ class AdminInformationControllerCore extends AdminController
 
     public function displayAjaxCheckFiles()
     {
+        // External file integrity check disabled for data sovereignty
         $this->file_list = array('missing' => array(), 'updated' => array());
-        $xml = @simplexml_load_file(_QLO_API_URL_.'/xml/md5/'._QLOAPPS_VERSION_.'.xml');
-        if (!$xml || !isset($xml->ps_root_dir[0])) {
-            die(json_encode($this->file_list));
-        }
-
-        $this->getListOfUpdatedFiles($xml->ps_root_dir[0]);
         die(json_encode($this->file_list));
     }
 

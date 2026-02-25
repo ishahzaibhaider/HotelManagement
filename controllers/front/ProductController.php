@@ -66,9 +66,7 @@ class ProductControllerCore extends FrontController
             $this->addJqueryPlugin('jqzoom');
         }
 
-        if (($PS_API_KEY = Configuration::get('PS_API_KEY'))
-            && ($PS_MAP_ID = Configuration::get('PS_MAP_ID'))
-        ) {
+        if (Configuration::get('WK_GOOGLE_ACTIVE_MAP')) {
             $objHotelRoomType = new HotelRoomType();
             if ($roomTypeInfo = $objHotelRoomType->getRoomTypeInfoByIdProduct($this->product->id)) {
                 $objHotelBranchInformation = new HotelBranchInformation($roomTypeInfo['id_hotel']);
@@ -81,13 +79,10 @@ class ProductControllerCore extends FrontController
                             'longitude' => $objHotelBranchInformation->longitude,
                         ),
                         'PS_STORES_ICON' => $this->context->link->getMediaLink(_PS_IMG_.Configuration::get('PS_STORES_ICON')),
-                        'PS_MAP_ID' => $PS_MAP_ID
                     ));
 
-                    $this->addJS(
-                        'https://maps.googleapis.com/maps/api/js?key='.$PS_API_KEY.
-                        '&libraries=places,marker&loading=async&callback=initMap&language='.$this->context->language->iso_code.'&region='.$this->context->country->iso_code
-                    );
+                    $this->addCSS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+                    $this->addJS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
                 }
             }
         }

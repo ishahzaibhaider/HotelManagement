@@ -76,7 +76,7 @@
 									<div class="hotel-branch-info-actions">
 										<a href="{$hotel['view_rooms_link']}" target="_blank" class="btn btn-primary view_rooms_btn col-sm-6 col-xs-12">{l s='View Rooms'}</a>
 										{if ($hotel['latitude'] != 0 || $hotel['longitude'] != 0) && $viewOnMap}
-											<a class="btn htl-map-direction-btn col-sm-6 col-xs-12" href="http://maps.google.com/maps?daddr=({$hotel['latitude']},{$hotel['longitude']})" target="_blank">{l s='View on map'}</a>
+											<a class="btn htl-map-direction-btn col-sm-6 col-xs-12" href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=;{$hotel['latitude']},{$hotel['longitude']}" target="_blank">{l s='View on map'}</a>
 										{/if}
 									</div>
 								</div>

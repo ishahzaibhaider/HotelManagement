@@ -413,7 +413,7 @@
 																<p class="name">{$hotel_name|escape:'html':'UTF-8'}</p>
 																<p class="address">{$hotel_address1|escape:'html':'UTF-8'}</p>
 																<p class="contact">{l s='Contact:'} {$hotel_phone|escape:'html':'UTF-8'}</p>
-																<a class="btn view-on-map" href="https://www.google.com/maps/search/?api=1&query={if $hotel_map_input_text != ''}{$hotel_map_input_text|urlencode}{else}{($hotel_latitude|cat:','|cat:$hotel_longitude)|urlencode}{/if}" target="_blank">
+																<a class="btn view-on-map" href="https://www.openstreetmap.org/search?query={if $hotel_map_input_text != ''}{$hotel_map_input_text|urlencode}{else}{($hotel_latitude|cat:','|cat:$hotel_longitude)|urlencode}{/if}" target="_blank">
 																	<span>{l s='View on Map'}</span>
 																</a>
 															</div>

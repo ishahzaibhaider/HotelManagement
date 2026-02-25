@@ -989,15 +989,9 @@ class AdminAddHotelController extends ModuleAdminController
                 'PS_MAP_ID' => ($PS_MAP_ID = Configuration::get('PS_MAP_ID'))
             )
         );
-        // GOOGLE MAP
-        $language = $this->context->language;
-        $country = $this->context->country;
-        if (($PS_API_KEY = Configuration::get('PS_API_KEY')) && $PS_MAP_ID) {
-            $this->addJS(
-                'https://maps.googleapis.com/maps/api/js?key='.$PS_API_KEY.'&libraries=places,marker&loading=async&language='.
-                $language->iso_code.'&region='.$country->iso_code.'&callback=initGoogleMaps'
-            );
-        }
+        // OpenStreetMap via Leaflet (no API key required)
+        $this->addCSS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+        $this->addJS('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
         //tinymce
         $this->addJS(_PS_JS_DIR_.'tiny_mce/tiny_mce.js');
         if (version_compare(_PS_VERSION_, '1.6.0.11', '>')) {

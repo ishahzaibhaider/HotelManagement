@@ -393,21 +393,10 @@ class AdminHotelGeneralSettingsController extends ModuleAdminController
                 ),
             ),
             'googleMap' => array(
-                'title' => $this->l('Google Maps Settings'),
+                'title' => $this->l('Map Settings (OpenStreetMap)'),
                 'fields' => array(
-                    'PS_API_KEY' => array(
-                        'title' => $this->l('Google Maps API Key'),
-                        'hint' => $this->l('Unique API key for Google Maps.'),
-                        'type' => 'text',
-                    ),
-                    'PS_MAP_ID' => array(
-                        'title' => $this->l('Google Map ID'),
-                        'hint' => $this->l('Map Id for Google Maps.'),
-                        'type' => 'text',
-                        'desc' => $this->l('Google Maps API Key and Google Map ID is required to display Google Maps.')
-                    ),
                     'WK_GOOGLE_ACTIVE_MAP' => array(
-                        'title' => $this->l('Display Google Maps For Hotel Location'),
+                        'title' => $this->l('Enable Maps For Hotel Location'),
                         'cast' => 'intval',
                         'type' => 'bool',
                         'default' => '1',
@@ -421,7 +410,7 @@ class AdminHotelGeneralSettingsController extends ModuleAdminController
                                 'value' => 0,
                             ),
                         ),
-                        'hint' => $this->l('Enable to display Google Maps for hotel locations. If disabled, Google Maps will not be shown.'),
+                        'hint' => $this->l('Enable to display maps for hotel locations using OpenStreetMap. No API key required.'),
                     ),
                     'WK_MAP_HOTEL_ACTIVE_ONLY' => array(
                         'title' => $this->l('Display Active Hotels Only'),
@@ -441,7 +430,7 @@ class AdminHotelGeneralSettingsController extends ModuleAdminController
                         'hint' => $this->l('If yes, only active hotels will be displayed on map.'),
                     ),
                     'WK_DISPLAY_PROPERTIES_PAGE_GOOGLE_MAP' => array(
-                        'title' => $this->l('Display Our Properties page Google map'),
+                        'title' => $this->l('Display Our Properties page map'),
                         'cast' => 'intval',
                         'type' => 'bool',
                         'default' => '0',
@@ -458,7 +447,7 @@ class AdminHotelGeneralSettingsController extends ModuleAdminController
                         'hint' => $this->l('Enable to display map with hotels locations on the our properties page.'),
                     ),
                     'WK_DISPLAY_CONTACT_PAGE_GOOLGE_MAP' => array(
-                        'title' => $this->l('Display Contact Us page Google map'),
+                        'title' => $this->l('Display Contact Us page map'),
                         'cast' => 'intval',
                         'type' => 'bool',
                         'default' => '0',
@@ -605,14 +594,7 @@ class AdminHotelGeneralSettingsController extends ModuleAdminController
             } elseif (Tools::getValue('WK_ADVANCED_PAYMENT_GLOBAL_MIN_AMOUNT') > 100) {
                 $this->errors[] = $this->l('Minimum partial payment percentage should not be more than 100.');
             }
-            if (Tools::getValue('WK_GOOGLE_ACTIVE_MAP')) {
-                if (!Tools::getValue('PS_API_KEY')) {
-                    $this->errors[] = $this->l('Please enter Google API key.');
-                }
-                if (!Tools::getValue('PS_MAP_ID')) {
-                    $this->errors[] = $this->l('Please enter Google Map Id.');
-                }
-            }
+            // Maps now use OpenStreetMap — no API key validation needed
             if (!trim(Tools::getValue('PS_SHOP_NAME'))) {
                 $this->errors[] = $this->l('Website name field is required');
             }

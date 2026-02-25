@@ -1774,6 +1774,9 @@ abstract class ModuleCore
 
     public static function refreshModuleList($force_reload_cache = false)
     {
+        // External API calls disabled for data sovereignty
+        return 'disabled';
+
         $status = false;
 
         if (!Tools::isFresh(Module::CACHE_FILE_MODULES_LIST, _TIME_1_DAY_) || $force_reload_cache) {

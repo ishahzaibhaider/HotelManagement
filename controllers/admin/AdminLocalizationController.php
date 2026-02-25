@@ -174,11 +174,8 @@ class AdminLocalizationControllerCore extends AdminController
             $version = substr($version, 0, 2);
 
             if (($iso_localization_pack = Tools::getValue('iso_localization_pack')) && Validate::isFileName($iso_localization_pack)) {
-                if (Tools::getValue('download_updated_pack') == '1' || defined('_PS_HOST_MODE_')) {
-                    $pack = @Tools::file_get_contents(_QLO_API_URL_.'/localization/'.$version.'/'.$iso_localization_pack.'.xml');
-                } else {
-                    $pack = false;
-                }
+                // External localization pack download disabled for data sovereignty — use local files only
+                $pack = false;
 
                 if (defined('_PS_HOST_MODE_')) {
                     $path = _PS_CORE_DIR_.'/localization/'.$iso_localization_pack.'.xml';
@@ -226,7 +223,8 @@ class AdminLocalizationControllerCore extends AdminController
         $localizations_pack = [];
         $this->tpl_option_vars['options_content'] = $this->renderOptions();
 
-        $xml_localization = Tools::simplexml_load_file(_QLO_API_URL_.'/xml/localization.xml');
+        // External localization list fetch disabled for data sovereignty — use local file
+        $xml_localization = null;
         if (!$xml_localization) {
             $localization_file = _PS_ROOT_DIR_.'/localization/localization.xml';
             if (file_exists($localization_file)) {
