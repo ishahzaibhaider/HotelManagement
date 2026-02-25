@@ -29,8 +29,9 @@ services:
       - ADMIN_FIRSTNAME=${ADMIN_FIRSTNAME:-Admin}
       - ADMIN_LASTNAME=${ADMIN_LASTNAME:-User}
       - SHOP_NAME=${SHOP_NAME:-My Hotel}
-      - SHOP_DOMAIN=${SHOP_DOMAIN:-localhost}
+      - SHOP_DOMAIN=${SHOP_DOMAIN:-admin.nrktravelandtours.com}
       - SHOP_COUNTRY=${SHOP_COUNTRY:-us}
+      - ADMIN_FOLDER=${ADMIN_FOLDER:-admin616pmej7p}
     volumes:
       - qloapps_img:/var/www/html/img
       - qloapps_upload:/var/www/html/upload
