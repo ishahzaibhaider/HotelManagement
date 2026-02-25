@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: qloapps-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-admin-only.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  app:
+    image: ishahzaibhaider/qloapps:latest
+    container_name: qloapps-app
+    ports:
+      - "8080:80"
+    environment:
+      - DB_SERVER=db
+      - DB_USER=${DB_USER:-qloapps}
+      - DB_PASSWORD=${DB_PASSWORD:-qloapps_secret}
+      - DB_NAME=${DB_NAME:-qloapps}
+      - DB_PREFIX=${DB_PREFIX:-qlo_}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin@123}
+      - ADMIN_FIRSTNAME=${ADMIN_FIRSTNAME:-Admin}
+      - ADMIN_LASTNAME=${ADMIN_LASTNAME:-User}
+      - SHOP_NAME=${SHOP_NAME:-My Hotel}
+      - SHOP_DOMAIN=${SHOP_DOMAIN:-localhost}
+      - SHOP_COUNTRY=${SHOP_COUNTRY:-us}
+    volumes:
+      - qloapps_img:/var/www/html/img
+      - qloapps_upload:/var/www/html/upload
+      - qloapps_download:/var/www/html/download
+      - qloapps_log:/var/www/html/log
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: qloapps-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_secret}
+      - MYSQL_DATABASE=${DB_NAME:-qloapps}
+      - MYSQL_USER=${DB_USER:-qloapps}
+      - MYSQL_PASSWORD=${DB_PASSWORD:-qloapps_secret}
+    volumes:
+      - qloapps_db:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_secret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  qloapps_db:
+    driver: local
+  qloapps_img:
+    driver: local
+  qloapps_upload:
+    driver: local
+  qloapps_download:
+    driver: local
+  qloapps_log:
+    driver: local
