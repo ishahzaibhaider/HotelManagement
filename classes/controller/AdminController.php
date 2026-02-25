@@ -2353,6 +2353,8 @@ class AdminControllerCore extends Controller
 
         $tab_modules_list = $this->filterTabModuleList($tab_modules_list);
 
+        // Recommendations button commented out
+        /*
         if (!empty($tab_modules_list) && (is_array($tab_modules_list['slider_list']) && count($tab_modules_list['slider_list']))
             || !Tab::isTabModuleListAvailable()
         ) {
@@ -2361,6 +2363,7 @@ class AdminControllerCore extends Controller
                 'desc' => $this->l('Recommendations')
             );
         }
+        */
     }
 
 
