@@ -102,9 +102,10 @@
             </div>
         </div>
     </div>
-	{include file='recomended-banner.tpl'}
-	<div class="row" id="recommendation-wrapper" style="display:none">
-	</div>
+	{* Recommendations section commented out *}
+	{* include file='recomended-banner.tpl' *}
+	{* <div class="row" id="recommendation-wrapper" style="display:none">
+	</div> *}
     <div class="row">
         <div class="col-md-8 col-md-push-4 col-lg-7 col-lg-push-3" id="hookDashboardZoneTwo">
             <div class='row'>

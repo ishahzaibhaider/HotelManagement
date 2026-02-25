@@ -57,11 +57,14 @@ class AdminDashboardControllerCore extends AdminController
     public function initPageHeaderToolbar()
     {
         $this->page_header_toolbar_title = $this->l('Dashboard');
+        // Demo mode toggle button commented out
+        /*
         $this->page_header_toolbar_btn['switch_demo'] = array(
             'desc' => $this->l('Demo mode', null, null, false),
             'icon' => 'process-icon-toggle-'.(Configuration::get('PS_DASHBOARD_SIMULATION') ? 'on' : 'off'),
             'help' => $this->l('This mode displays sample data so you can try your dashboard without real numbers.', null, null, false)
         );
+        */
 
         parent::initPageHeaderToolbar();
 
